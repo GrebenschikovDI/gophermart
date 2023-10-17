@@ -3,11 +3,12 @@ package api
 import (
 	"github.com/GrebenschikovDI/gophermart.git/internal/delivery/api/handlers"
 	"github.com/go-chi/chi/v5"
-	_ "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 func Router() *chi.Mux {
 	r := chi.NewRouter()
+	r.Use(middleware.Recoverer)
 	r.Get("/api/user/orders", handlers.GetOrders)
 	r.Get("/api/user/balance", handlers.GetBalance)
 	r.Get("/api/user/withdrawals", handlers.GetWithdrawals)
