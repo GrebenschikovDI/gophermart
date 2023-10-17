@@ -32,8 +32,8 @@ func LoadConfig() (*ServerConfig, error) {
 
 func (c *ServerConfig) configureFlags() error {
 	flag.StringVar(&c.RunAddress, "a", defaultRun, "address and port for server to run")
-	flag.StringVar(&c.Dsn, "-d", defaultDsn, "database address")
-	flag.StringVar(&c.AccrualAddress, "-r", defaultAccrual, "accrual address")
+	flag.StringVar(&c.Dsn, "d", defaultDsn, "database address")
+	flag.StringVar(&c.AccrualAddress, "r", defaultAccrual, "accrual address")
 	return nil
 }
 
