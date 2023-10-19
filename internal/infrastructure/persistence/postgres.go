@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/repository"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -13,17 +14,32 @@ import (
 )
 
 type PgStorage struct {
-	db  *sql.DB
-	dsn string
+	db             *sql.DB
+	userRepo       repository.UserRepository
+	orderRepo      repository.OrderRepository
+	balanceRepo    repository.BalanceRepository
+	withdrawalRepo repository.WithdrawalRepository
 }
 
 func InitDB(_ context.Context, dsn, migrations string) (*PgStorage, error) {
 	db, err := sql.Open("pgx", dsn)
+	userRepo := NewUserRepo(db)
+	orderRepo := NewOrderRepo(db)
+	balanceRepo := NewBalanceRepo(db)
+	withdrawalRepo := NewWithdrawalRepo(db)
 	storage := &PgStorage{
-		db:  db,
-		dsn: dsn,
+		db:             db,
+		userRepo:       userRepo,
+		orderRepo:      orderRepo,
+		balanceRepo:    balanceRepo,
+		withdrawalRepo: withdrawalRepo,
 	}
+
 	err = storage.runMigrations(dsn, migrations)
+	if err != nil {
+		return nil, err
+	}
+	err = db.Ping()
 	if err != nil {
 		return nil, err
 	}

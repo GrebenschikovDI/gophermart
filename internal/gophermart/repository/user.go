@@ -1,8 +1,12 @@
 package repository
 
-import "github.com/GrebenschikovDI/gophermart.git/internal/gophermart/entity"
+import (
+	"context"
+	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/entity"
+)
 
 type UserRepository interface {
-	FindByLogin(login string) (*entity.User, error)
-	Save(user *entity.User) error
+	Create(ctx context.Context, user *entity.User) error
+	GetByID(ctx context.Context, userID int) (*entity.User, error)
+	GetByUsername(ctx context.Context, username string) (*entity.User, error)
 }
