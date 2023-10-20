@@ -14,11 +14,11 @@ import (
 )
 
 type PgStorage struct {
-	db             *sql.DB
-	userRepo       repository.UserRepository
-	orderRepo      repository.OrderRepository
-	balanceRepo    repository.BalanceRepository
-	withdrawalRepo repository.WithdrawalRepository
+	DB             *sql.DB
+	UserRepo       repository.UserRepository
+	OrderRepo      repository.OrderRepository
+	BalanceRepo    repository.BalanceRepository
+	WithdrawalRepo repository.WithdrawalRepository
 }
 
 func InitDB(_ context.Context, dsn, migrations string) (*PgStorage, error) {
@@ -28,11 +28,11 @@ func InitDB(_ context.Context, dsn, migrations string) (*PgStorage, error) {
 	balanceRepo := NewBalanceRepo(db)
 	withdrawalRepo := NewWithdrawalRepo(db)
 	storage := &PgStorage{
-		db:             db,
-		userRepo:       userRepo,
-		orderRepo:      orderRepo,
-		balanceRepo:    balanceRepo,
-		withdrawalRepo: withdrawalRepo,
+		DB:             db,
+		UserRepo:       userRepo,
+		OrderRepo:      orderRepo,
+		BalanceRepo:    balanceRepo,
+		WithdrawalRepo: withdrawalRepo,
 	}
 
 	err = storage.runMigrations(dsn, migrations)
