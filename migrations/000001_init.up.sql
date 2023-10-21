@@ -1,7 +1,7 @@
 CREATE TABLE if not exists users
 (
     id            serial primary key,
-    username      varchar(255) not null,
+    username      varchar(255) not null unique,
     password_hash varchar(255) not null,
     created_at    timestamp    not null default now()
 );

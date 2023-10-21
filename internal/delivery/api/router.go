@@ -17,7 +17,7 @@ func Router(userUseCase usecase.UserUseCase) *chi.Mux {
 	r.Get("/api/user/balance", handlers.GetBalance)
 	r.Get("/api/user/withdrawals", handlers.GetWithdrawals)
 	r.Post("/api/user/register", userHandler.RegisterUser)
-	r.Post("/api/user/login", handlers.LoginUser)
+	r.Post("/api/user/login", userHandler.LoginUser)
 	r.Post("/api/user/orders", handlers.CreateOrders)
 	r.Post("/api/user/balance/withdraw", handlers.WithdrawBalance)
 	return r

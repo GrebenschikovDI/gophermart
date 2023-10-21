@@ -9,6 +9,7 @@ import (
 )
 
 var ErrUserExists = errors.New("user already exists")
+var ErrUnauthorized = errors.New("authentication failed")
 
 type UserUseCase struct {
 	userRepo repository.UserRepository
@@ -48,6 +49,20 @@ func (u *UserUseCase) RegisterUser(ctx context.Context, username, password strin
 	return user, err
 }
 
+func (u *UserUseCase) AuthenticateUser(ctx context.Context, username, password string) (*entity.User, error) {
+	user, err := u.GetUserByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, ErrUnauthorized
+	}
+	if err := comparePasswords(user.Password, password); err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 func (u *UserUseCase) GetUserByUsername(ctx context.Context, username string) (*entity.User, error) {
 	existingUser, err := u.userRepo.GetByUsername(ctx, username)
 	if err != nil {
@@ -65,4 +80,12 @@ func hashPassword(password string) (string, error) {
 		return "", err
 	}
 	return string(passwordHash), nil
+}
+
+func comparePasswords(hashedPassword, password string) error {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if err != nil {
+		return ErrUnauthorized
+	}
+	return nil
 }
