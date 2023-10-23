@@ -56,17 +56,17 @@ func (o *OrderHandler) UploadOrder(w http.ResponseWriter, r *http.Request) {
 
 	orderIDStr := strings.TrimSpace(string(body))
 
-	if !isLuhnValid(orderIDStr) {
-		if err != nil {
-			http.Error(w, "Bad format of order", http.StatusUnprocessableEntity)
-			return
-		}
-	}
-
 	orderID, err := strconv.Atoi(orderIDStr)
 	if err != nil {
 		http.Error(w, "Cant get user id", http.StatusInternalServerError)
 		return
+	}
+
+	if !isLuhnValid(orderID) {
+		if err != nil {
+			http.Error(w, "Bad format of order", http.StatusUnprocessableEntity)
+			return
+		}
 	}
 
 	currentUserID, err := getCurrentUser(r)
@@ -89,23 +89,25 @@ func (o *OrderHandler) UploadOrder(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func isLuhnValid(s string) bool {
-	sum := 0
-	nDigits := len(s)
-	parity := nDigits % 2
-	arr := []byte(s)
-	for i := 0; i < nDigits; i++ {
-		if arr[i] < 48 || arr[i] > 57 {
-			return false
-		}
-		digit := int(arr[i] - 48)
-		if i%2 == parity {
-			digit *= 2
-			if digit > 9 {
-				digit -= 9
+func isLuhnValid(number int) bool {
+	return (number%10+checksum(number/10))%10 == 0
+}
+
+func checksum(number int) int {
+	var luhn int
+
+	for i := 0; number > 0; i++ {
+		cur := number % 10
+
+		if i%2 == 0 {
+			cur = cur * 2
+			if cur > 9 {
+				cur = cur%10 + cur/10
 			}
 		}
-		sum += digit
+
+		luhn += cur
+		number = number / 10
 	}
-	return (sum % 10) == 0
+	return luhn % 10
 }
