@@ -27,7 +27,11 @@ func (r orderRepo) Create(ctx context.Context, order *entity.Order) error {
 }
 
 func (r orderRepo) GetByID(ctx context.Context, id int) (*entity.Order, error) {
-	row := r.db.QueryRowContext(ctx, "SELECT  id, user_id, status, uploaded_at FROM orders WHERE id = $1", id)
+	row := r.db.QueryRowContext(
+		ctx,
+		"SELECT  id, user_id, status, uploaded_at FROM orders WHERE id = $1",
+		id,
+	)
 	order := &entity.Order{}
 	err := row.Scan(&order.ID, &order.UserID, &order.Status, &order.UploadedAt)
 	if err != nil {
@@ -45,7 +49,11 @@ func (r orderRepo) Update(ctx context.Context, id int, status string) (*entity.O
 }
 
 func (r orderRepo) GetByUserID(ctx context.Context, userID int) ([]*entity.Order, error) {
-	rows, err := r.db.QueryContext(ctx, "SELECT id, user_id, status, uploaded_at FROM orders WHERE user_id = $1", userID)
+	rows, err := r.db.QueryContext(
+		ctx,
+		"SELECT id, user_id, status, uploaded_at FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC ",
+		userID,
+	)
 	if err != nil {
 		return nil, err
 	}

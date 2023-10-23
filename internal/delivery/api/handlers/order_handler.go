@@ -8,10 +8,18 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type OrderHandler struct {
 	OrderUseCase usecase.OrderUseCase
+}
+
+type OrderRequest struct {
+	Number     int       `json:"number"`
+	Status     string    `json:"status"`
+	Accrual    float64   `json:"accrual,omitempty"`
+	UploadedAt time.Time `json:"uploaded_at"`
 }
 
 func NewOrderHandler(orderUseCase usecase.OrderUseCase) *OrderHandler {
@@ -40,8 +48,19 @@ func (o *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ordersRequest := make([]*OrderRequest, 0)
+	for _, order := range orders {
+		ord := &OrderRequest{
+			Number:     order.ID,
+			Status:     order.Status,
+			Accrual:    order.Accrual,
+			UploadedAt: order.UploadedAt,
+		}
+		ordersRequest = append(ordersRequest, ord)
+	}
+
 	enc := json.NewEncoder(w)
-	if err := enc.Encode(orders); err != nil {
+	if err := enc.Encode(ordersRequest); err != nil {
 		http.Error(w, "Error encoding JSON", http.StatusInternalServerError)
 		return
 	}
