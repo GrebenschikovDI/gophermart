@@ -52,7 +52,12 @@ func (r balanceRepo) GetByUserID(ctx context.Context, userID int) ([]*entity.Bal
 		}
 		balances = append(balances, balance)
 	}
-	return balances, err
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return balances, nil
 }
 
 func (r balanceRepo) Update(ctx context.Context, balance *entity.Balance) error {

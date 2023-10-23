@@ -24,13 +24,12 @@ func main() {
 		fmt.Println("Error with db", err)
 	}
 
-	_ = api.InitDependencies(db)
-
 	userUseCase := usecase.NewUserUseCase(db.UserRepo)
+	orderUseCase := usecase.NewOrderUseCase(db.OrderRepo)
 
 	server := &http.Server{
 		Addr:    cfg.RunAddress,
-		Handler: api.Router(*userUseCase),
+		Handler: api.Router(*userUseCase, *orderUseCase),
 	}
 
 	fmt.Println("Running server at", cfg.RunAddress)

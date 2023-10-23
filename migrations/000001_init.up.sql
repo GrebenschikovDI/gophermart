@@ -8,7 +8,7 @@ CREATE TABLE if not exists users
 
 CREATE TABLE if not exists orders
 (
-    id          serial primary key,
+    id          bigint primary key not null unique,
     user_id     int references users (id) on delete cascade not null,
     status      varchar(255),
     uploaded_at timestamp                                   not null default now()

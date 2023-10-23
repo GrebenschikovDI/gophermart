@@ -52,5 +52,10 @@ func (r withdrawalRepo) GetByUserID(ctx context.Context, userID int) ([]*entity.
 		}
 		withdrawals = append(withdrawals, withdrawal)
 	}
-	return withdrawals, err
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return withdrawals, nil
 }
