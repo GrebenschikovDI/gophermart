@@ -26,7 +26,7 @@ func (r orderRepo) Create(ctx context.Context, order *entity.Order) error {
 	return nil
 }
 
-func (r orderRepo) GetByID(ctx context.Context, id int) (*entity.Order, error) {
+func (r orderRepo) GetByID(ctx context.Context, id string) (*entity.Order, error) {
 	row := r.db.QueryRowContext(
 		ctx,
 		"SELECT  id, user_id, status, uploaded_at FROM orders WHERE id = $1",
@@ -40,7 +40,7 @@ func (r orderRepo) GetByID(ctx context.Context, id int) (*entity.Order, error) {
 	return order, nil
 }
 
-func (r orderRepo) Update(ctx context.Context, id int, status string) (*entity.Order, error) {
+func (r orderRepo) Update(ctx context.Context, id string, status string) (*entity.Order, error) {
 	_, err := r.db.ExecContext(ctx, "UPDATE orders SET status = $1 WHERE id = $2", status, id)
 	if err != nil {
 		return nil, err

@@ -6,7 +6,6 @@ import (
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/usecase"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -16,7 +15,7 @@ type OrderHandler struct {
 }
 
 type OrderRequest struct {
-	Number     int       `json:"number"`
+	Number     string    `json:"number"`
 	Status     string    `json:"status"`
 	Accrual    float64   `json:"accrual,omitempty"`
 	UploadedAt time.Time `json:"uploaded_at"`
@@ -73,18 +72,18 @@ func (o *OrderHandler) UploadOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderIDStr := strings.TrimSpace(string(body))
+	orderID := strings.TrimSpace(string(body))
 
-	if !isLuhnValid(orderIDStr) {
+	if !isLuhnValid(orderID) {
 		http.Error(w, "Bad format of order", http.StatusUnprocessableEntity)
 		return
 	}
 
-	orderID, err := strconv.Atoi(orderIDStr)
-	if err != nil {
-		http.Error(w, "Cant get user id", http.StatusInternalServerError)
-		return
-	}
+	//orderID, err := strconv.Atoi(orderIDStr)
+	//if err != nil {
+	//	http.Error(w, "Cant get user id", http.StatusInternalServerError)
+	//	return
+	//}
 
 	currentUserID, err := getCurrentUser(r)
 	if err != nil {

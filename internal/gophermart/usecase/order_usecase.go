@@ -20,7 +20,7 @@ func NewOrderUseCase(orderRepo repository.OrderRepository) *OrderUseCase {
 	}
 }
 
-func (u *OrderUseCase) CreateOrder(ctx context.Context, id, userID int, status string) (*entity.Order, error) {
+func (u *OrderUseCase) CreateOrder(ctx context.Context, id string, userID int, status string) (*entity.Order, error) {
 	newOrder := &entity.Order{
 		ID:     id,
 		UserID: userID,
@@ -46,7 +46,7 @@ func (u *OrderUseCase) CreateOrder(ctx context.Context, id, userID int, status s
 	}
 }
 
-func (u *OrderUseCase) GetOrderByID(ctx context.Context, id int) (*entity.Order, error) {
+func (u *OrderUseCase) GetOrderByID(ctx context.Context, id string) (*entity.Order, error) {
 	order, err := u.orderRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (u *OrderUseCase) GetByUserID(ctx context.Context, userID int) ([]*entity.O
 	return orderList, nil
 }
 
-func (u *OrderUseCase) UpdateOrderStatus(ctx context.Context, id int, status string) (*entity.Order, error) {
+func (u *OrderUseCase) UpdateOrderStatus(ctx context.Context, id, status string) (*entity.Order, error) {
 	order, err := u.orderRepo.Update(ctx, id, status)
 	if err != nil {
 		return nil, err
