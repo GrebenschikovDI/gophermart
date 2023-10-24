@@ -17,7 +17,7 @@ type Response struct {
 }
 
 func SendOrder(order string, cfg config.ServerConfig, responseChan chan<- Response) {
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 30 * time.Second}
 	server := cfg.AccrualAddress
 	url := fmt.Sprintf("http://%s/api/orders/%s", server, order)
 	request, err := http.NewRequest(http.MethodGet, url, nil)
