@@ -17,8 +17,8 @@ func NewUserRepo(db *sql.DB) repository.UserRepository {
 	}
 }
 
-func (r *userRepo) Create(ctx context.Context, user *entity.User) error {
-	_, err := r.db.ExecContext(ctx, "INSERT INTO users (username, password_hash) VALUES ($1, $2)",
+func (u *userRepo) Create(ctx context.Context, user *entity.User) error {
+	_, err := u.db.ExecContext(ctx, "INSERT INTO users (username, password_hash) VALUES ($1, $2)",
 		user.Login, user.Password)
 	if err != nil {
 		return err
@@ -26,8 +26,8 @@ func (r *userRepo) Create(ctx context.Context, user *entity.User) error {
 	return nil
 }
 
-func (r *userRepo) GetByID(ctx context.Context, id int) (*entity.User, error) {
-	row := r.db.QueryRowContext(ctx, "SELECT id, username, password_hash FROM users WHERE id = $1", id)
+func (u *userRepo) GetByID(ctx context.Context, id int) (*entity.User, error) {
+	row := u.db.QueryRowContext(ctx, "SELECT id, username, password_hash FROM users WHERE id = $1", id)
 	user := &entity.User{}
 	err := row.Scan(&user.ID, &user.Login, &user.Password)
 	if err != nil {
@@ -36,8 +36,8 @@ func (r *userRepo) GetByID(ctx context.Context, id int) (*entity.User, error) {
 	return user, nil
 }
 
-func (r *userRepo) GetByUsername(ctx context.Context, username string) (*entity.User, error) {
-	row := r.db.QueryRowContext(ctx, "SELECT id, username, password_hash FROM users WHERE username = $1",
+func (u *userRepo) GetByUsername(ctx context.Context, username string) (*entity.User, error) {
+	row := u.db.QueryRowContext(ctx, "SELECT id, username, password_hash FROM users WHERE username = $1",
 		username)
 	user := &entity.User{}
 	err := row.Scan(&user.ID, &user.Login, &user.Password)

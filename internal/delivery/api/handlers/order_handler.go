@@ -28,9 +28,6 @@ func NewOrderHandler(orderUseCase usecase.OrderUseCase) *OrderHandler {
 }
 
 func (o *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
 	currentUserID, err := getCurrentUser(r)
 	if err != nil {
 		http.Error(w, "Cant get user id", http.StatusUnauthorized)
@@ -47,13 +44,18 @@ func (o *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
 	ordersRequest := make([]*OrderRequest, 0)
 	for _, order := range orders {
 		ord := &OrderRequest{
 			Number:     order.ID,
 			Status:     order.Status,
-			Accrual:    order.Accrual,
 			UploadedAt: order.UploadedAt,
+		}
+		if order.Accrual != nil {
+			ord.Accrual = *order.Accrual
 		}
 		ordersRequest = append(ordersRequest, ord)
 	}
@@ -78,12 +80,6 @@ func (o *OrderHandler) UploadOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad format of order", http.StatusUnprocessableEntity)
 		return
 	}
-
-	//orderID, err := strconv.Atoi(orderIDStr)
-	//if err != nil {
-	//	http.Error(w, "Cant get user id", http.StatusInternalServerError)
-	//	return
-	//}
 
 	currentUserID, err := getCurrentUser(r)
 	if err != nil {

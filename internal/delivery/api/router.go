@@ -8,7 +8,12 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func Router(userUseCase usecase.UserUseCase, orderUseCase usecase.OrderUseCase) *chi.Mux {
+func Router(
+	userUseCase usecase.UserUseCase,
+	orderUseCase usecase.OrderUseCase,
+	balanceUseCase usecase.BalanceUseCase,
+	withdrawalUseCase usecase.WithdrawalUseCase,
+) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
 
@@ -17,11 +22,11 @@ func Router(userUseCase usecase.UserUseCase, orderUseCase usecase.OrderUseCase) 
 		orderHandler := handlers.NewOrderHandler(orderUseCase)
 		r.Get("/api/user/orders", orderHandler.GetOrders)
 		r.Post("/api/user/orders", orderHandler.UploadOrder)
+		balanceHandler := handlers.NewBalanceHandler(balanceUseCase, withdrawalUseCase)
+		r.Get("/api/user/balance", balanceHandler.GetBalance)
+		r.Post("/api/user/balance/withdraw", balanceHandler.Withdraw)
 
-		r.Get("/api/user/balance", handlers.GetBalance)
-		r.Get("/api/user/withdrawals", handlers.GetWithdrawals)
-
-		r.Post("/api/user/balance/withdraw", handlers.WithdrawBalance)
+		r.Get("/api/user/withdrawals", balanceHandler.GetWithdrawals)
 	})
 
 	userHandler := handlers.NewUserHandler(userUseCase)

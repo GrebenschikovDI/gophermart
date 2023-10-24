@@ -7,7 +7,8 @@ import (
 
 type BalanceRepository interface {
 	Create(ctx context.Context, balance *entity.Balance) error
-	GetByID(ctx context.Context, id int) (*entity.Balance, error)
-	GetByUserID(ctx context.Context, userID int) ([]*entity.Balance, error)
-	Update(ctx context.Context, balance *entity.Balance) error
+	GetByID(ctx context.Context, userID int) (*entity.Balance, error)
+	Add(ctx context.Context, userID int, amount float64) error
+	Withdraw(ctx context.Context, userID int, withdraw float64) error
+	CheckWithdrawal(ctx context.Context, userID int, withdrawal float64) (bool, error)
 }

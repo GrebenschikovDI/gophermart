@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/entity"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/repository"
+	"time"
 )
 
 type balanceRepo struct {
@@ -17,50 +18,98 @@ func NewBalanceRepo(db *sql.DB) repository.BalanceRepository {
 	}
 }
 
-func (r balanceRepo) Create(ctx context.Context, balance *entity.Balance) error {
-	_, err := r.db.ExecContext(ctx, "INSERT INTO balance (user_id, order_id, amount) VALUES ($1, $2, $3)",
-		balance.UserID, balance.OrderID, balance.Amount)
+func (b *balanceRepo) Create(ctx context.Context, balance *entity.Balance) error {
+	_, err := b.db.ExecContext(ctx, "INSERT INTO balance (user_id,  amount) VALUES ($1, $2)",
+		balance.UserID, balance.Amount)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r balanceRepo) GetByID(ctx context.Context, id int) (*entity.Balance, error) {
-	row := r.db.QueryRowContext(ctx, "SELECT  id, user_id, order_id, amount, processed_at FROM balance WHERE id = $1", id)
+func (b *balanceRepo) GetByID(ctx context.Context, userID int) (*entity.Balance, error) {
+	row := b.db.QueryRowContext(
+		ctx,
+		"SELECT user_id, amount, withdrawn, processed_at FROM balance WHERE user_id = $1",
+		userID)
 	balance := &entity.Balance{}
-	err := row.Scan(&balance.ID, &balance.UserID, &balance.OrderID, &balance.Amount, &balance.ProcessedAt)
+	err := row.Scan(&balance.UserID, &balance.Amount, &balance.Withdrawn, &balance.ProcessedAt)
 	if err != nil {
 		return nil, err
 	}
 	return balance, nil
 }
 
-func (r balanceRepo) GetByUserID(ctx context.Context, userID int) ([]*entity.Balance, error) {
-	rows, err := r.db.QueryContext(ctx, "SELECT id, user_id, order_id, amount, processed_at FROM balance WHERE user_id = $1", userID)
+func (b *balanceRepo) Add(ctx context.Context, userID int, amount float64) error {
+	tx, err := b.db.Begin()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	defer rows.Close()
+	defer tx.Rollback()
 
-	var balances []*entity.Balance
-	for rows.Next() {
-		balance := &entity.Balance{}
-		err := rows.Scan(&balance.ID, &balance.UserID, &balance.OrderID, &balance.Amount, &balance.ProcessedAt)
-		if err != nil {
-			return nil, err
-		}
-		balances = append(balances, balance)
+	t := time.Now().Format(time.RFC3339)
+
+	query := `
+		INSERT INTO balance (user_id, amount, processed_at)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id) DO UPDATE 
+		SET amount = balance.amount + excluded.amount, processed_at = excluded.processed_at
+	`
+	_, err = tx.ExecContext(ctx, query, userID, amount, t)
+	if err != nil {
+		return err
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
+	if err := tx.Commit(); err != nil {
+		return err
 	}
-
-	return balances, nil
+	return nil
 }
 
-func (r balanceRepo) Update(ctx context.Context, balance *entity.Balance) error {
-	//TODO implement me
-	panic("implement me")
+func (b *balanceRepo) Withdraw(ctx context.Context, userID int, withdraw float64) error {
+	tx, err := b.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	t := time.Now().Format(time.RFC3339)
+
+	query := `
+		INSERT INTO balance (user_id, withdrawn, processed_at)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id) DO UPDATE 
+		SET amount = balance.amount - excluded.withdrawn, withdrawn = balance.withdrawn + excluded.withdrawn, processed_at = excluded.processed_at
+	`
+	_, err = tx.ExecContext(ctx, query, userID, withdraw, t)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *balanceRepo) CheckWithdrawal(ctx context.Context, userID int, withdrawal float64) (bool, error) {
+	tx, err := b.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+
+	var currentAmount float64
+	query := "SELECT amount FROM balance WHERE user_id = $1 FOR UPDATE"
+	err = tx.QueryRowContext(ctx, query, userID).Scan(&currentAmount)
+	if err != nil {
+		return false, err
+	}
+	if withdrawal > currentAmount {
+		return false, nil
+	}
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	return true, nil
 }

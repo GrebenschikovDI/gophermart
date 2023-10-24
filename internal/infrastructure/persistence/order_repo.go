@@ -17,8 +17,8 @@ func NewOrderRepo(db *sql.DB) repository.OrderRepository {
 	}
 }
 
-func (r orderRepo) Create(ctx context.Context, order *entity.Order) error {
-	_, err := r.db.ExecContext(ctx, "INSERT INTO orders (id, user_id, status) values ($1, $2, $3)", order.ID,
+func (o *orderRepo) Create(ctx context.Context, order *entity.Order) error {
+	_, err := o.db.ExecContext(ctx, "INSERT INTO orders (id, user_id, status) values ($1, $2, $3)", order.ID,
 		order.UserID, order.Status)
 	if err != nil {
 		return err
@@ -26,32 +26,49 @@ func (r orderRepo) Create(ctx context.Context, order *entity.Order) error {
 	return nil
 }
 
-func (r orderRepo) GetByID(ctx context.Context, id string) (*entity.Order, error) {
-	row := r.db.QueryRowContext(
+func (o *orderRepo) GetByID(ctx context.Context, id string) (*entity.Order, error) {
+	row := o.db.QueryRowContext(
 		ctx,
-		"SELECT  id, user_id, status, uploaded_at FROM orders WHERE id = $1",
+		"SELECT  id, user_id, status, accrual, uploaded_at FROM orders WHERE id = $1",
 		id,
 	)
 	order := &entity.Order{}
-	err := row.Scan(&order.ID, &order.UserID, &order.Status, &order.UploadedAt)
+	var accrual sql.NullFloat64
+	err := row.Scan(&order.ID, &order.UserID, &order.Status, &accrual, &order.UploadedAt)
 	if err != nil {
 		return nil, err
+	}
+	if accrual.Valid {
+		acc := accrual.Float64
+		order.Accrual = &acc
+	} else {
+		order.Accrual = nil
 	}
 	return order, nil
 }
 
-func (r orderRepo) Update(ctx context.Context, id string, status string) (*entity.Order, error) {
-	_, err := r.db.ExecContext(ctx, "UPDATE orders SET status = $1 WHERE id = $2", status, id)
-	if err != nil {
-		return nil, err
+func (o *orderRepo) Update(ctx context.Context, id, status string, accrual *float64) (*entity.Order, error) {
+	if accrual != nil {
+		_, err := o.db.ExecContext(
+			ctx,
+			"UPDATE orders SET status = $1, accrual = $2 WHERE id = $3",
+			status, *accrual, id)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		_, err := o.db.ExecContext(ctx, "UPDATE orders SET status = $1 WHERE id = $2", status, id)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return r.GetByID(ctx, id)
+	return o.GetByID(ctx, id)
 }
 
-func (r orderRepo) GetByUserID(ctx context.Context, userID int) ([]*entity.Order, error) {
-	rows, err := r.db.QueryContext(
+func (o *orderRepo) GetByUserID(ctx context.Context, userID int) ([]*entity.Order, error) {
+	rows, err := o.db.QueryContext(
 		ctx,
-		"SELECT id, user_id, status, uploaded_at FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC ",
+		"SELECT id, user_id, status, accrual, uploaded_at FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC ",
 		userID,
 	)
 	if err != nil {
@@ -62,9 +79,53 @@ func (r orderRepo) GetByUserID(ctx context.Context, userID int) ([]*entity.Order
 	orders := make([]*entity.Order, 0)
 	for rows.Next() {
 		order := &entity.Order{}
-		err := rows.Scan(&order.ID, &order.UserID, &order.Status, &order.UploadedAt)
+		var accrual sql.NullFloat64
+		err := rows.Scan(&order.ID, &order.UserID, &order.Status, &accrual, &order.UploadedAt)
 		if err != nil {
 			return nil, err
+		}
+		if accrual.Valid {
+			acc := accrual.Float64
+			order.Accrual = &acc
+		} else {
+			order.Accrual = nil
+		}
+		orders = append(orders, order)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return orders, nil
+}
+
+func (o *orderRepo) GetToSend(ctx context.Context) ([]*entity.Order, error) {
+	query := `
+        SELECT id, user_id, status, accrual, uploaded_at
+        FROM orders
+        WHERE status IN ('NEW', 'PROCESSING', 'REGISTERED')
+    `
+
+	rows, err := o.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	orders := make([]*entity.Order, 0)
+	for rows.Next() {
+		order := &entity.Order{}
+		var accrual sql.NullFloat64
+		err := rows.Scan(&order.ID, &order.UserID, &order.Status, &accrual, &order.UploadedAt)
+		if err != nil {
+			return nil, err
+		}
+		if accrual.Valid {
+			acc := accrual.Float64
+			order.Accrual = &acc
+		} else {
+			order.Accrual = nil
 		}
 		orders = append(orders, order)
 	}

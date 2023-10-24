@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/entity"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/repository"
@@ -27,14 +28,8 @@ func (u *OrderUseCase) CreateOrder(ctx context.Context, id string, userID int, s
 		Status: status,
 	}
 
-	existingOrder, _ := u.orderRepo.GetByID(ctx, id)
-	if existingOrder != nil {
-		if existingOrder.UserID != newOrder.UserID {
-			return existingOrder, AlreadyTaken
-		} else {
-			return existingOrder, AlreadyExists
-		}
-	} else {
+	existingOrder, err := u.orderRepo.GetByID(ctx, id)
+	if errors.Is(err, sql.ErrNoRows) {
 		if err := u.orderRepo.Create(ctx, newOrder); err != nil {
 			return nil, err
 		}
@@ -43,6 +38,15 @@ func (u *OrderUseCase) CreateOrder(ctx context.Context, id string, userID int, s
 			return nil, err
 		}
 		return order, nil
+	}
+	if existingOrder != nil {
+		if existingOrder.UserID != newOrder.UserID {
+			return existingOrder, AlreadyTaken
+		} else {
+			return existingOrder, AlreadyExists
+		}
+	} else {
+		return nil, err
 	}
 }
 
@@ -62,10 +66,22 @@ func (u *OrderUseCase) GetByUserID(ctx context.Context, userID int) ([]*entity.O
 	return orderList, nil
 }
 
-func (u *OrderUseCase) UpdateOrderStatus(ctx context.Context, id, status string) (*entity.Order, error) {
-	order, err := u.orderRepo.Update(ctx, id, status)
+func (u *OrderUseCase) UpdateOrderStatus(ctx context.Context, id, status string, accrual *float64) (*entity.Order, error) {
+	order, err := u.orderRepo.Update(ctx, id, status, accrual)
 	if err != nil {
 		return nil, err
 	}
 	return order, nil
+}
+
+func (u *OrderUseCase) GetToSend(ctx context.Context) ([]string, error) {
+	orders, err := u.orderRepo.GetToSend(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var numbers []string
+	for _, value := range orders {
+		numbers = append(numbers, value.ID)
+	}
+	return numbers, nil
 }

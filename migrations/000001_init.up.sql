@@ -8,27 +8,26 @@ CREATE TABLE if not exists users
 
 CREATE TABLE if not exists orders
 (
-    id          varchar(255) primary key not null unique,
+    id          varchar(255) primary key                    not null unique,
     user_id     int references users (id) on delete cascade not null,
     status      varchar(255),
+    accrual     double precision,
     uploaded_at timestamp                                   not null default now()
 );
 
 CREATE TABLE if not exists balance
 (
-    id           serial primary key,
-    user_id      int references users (id) on delete cascade not null,
-    order_id     varchar(255) references orders (id)                  not null,
-    amount       double precision                            not null default 0,
-    processed_at timestamp                                   not null default now()
+    user_id      int primary key references users (id) on delete cascade not null unique,
+    amount       double precision                                        not null default 0,
+    withdrawn    double precision                                        not null default 0,
+    processed_at timestamp                                               not null default now()
 );
 
 CREATE TABLE if not exists withdrawals
 (
     id           serial primary key,
     user_id      int references users (id) on delete cascade not null,
-    order_id     varchar(255) references orders (id)                  not null,
+    order_id     varchar(255)                                not null,
     amount       double precision                            not null default 0,
-    total        double precision                            not null default 0,
     processed_at timestamp                                   not null default now()
 )

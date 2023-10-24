@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GrebenschikovDI/gophermart.git/internal/accrual"
 	"github.com/GrebenschikovDI/gophermart.git/internal/delivery/api"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/usecase"
 	"github.com/GrebenschikovDI/gophermart.git/internal/infrastructure/config"
 	"github.com/GrebenschikovDI/gophermart.git/internal/infrastructure/persistence"
 	"net/http"
+	"time"
 )
 
 const migrations = "migrations"
@@ -26,11 +28,15 @@ func main() {
 
 	userUseCase := usecase.NewUserUseCase(db.UserRepo)
 	orderUseCase := usecase.NewOrderUseCase(db.OrderRepo)
+	balanceUseCase := usecase.NewBalanceUseCase(db.BalanceRepo)
+	withdrawalUseCase := usecase.NewWithdrawalUseCase(db.WithdrawalRepo)
 
 	server := &http.Server{
 		Addr:    cfg.RunAddress,
-		Handler: api.Router(*userUseCase, *orderUseCase),
+		Handler: api.Router(*userUseCase, *orderUseCase, *balanceUseCase, *withdrawalUseCase),
 	}
+
+	go accrual.Sender(context.Background(), *orderUseCase, *cfg, 5*time.Second)
 
 	fmt.Println("Running server at", cfg.RunAddress)
 
