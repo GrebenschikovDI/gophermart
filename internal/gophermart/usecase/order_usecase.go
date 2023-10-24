@@ -8,8 +8,8 @@ import (
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/repository"
 )
 
-var AlreadyExists = errors.New("order already exists")
-var AlreadyTaken = errors.New("order is taken by another user")
+var ErrAlreadyExists = errors.New("order already exists")
+var ErrAlreadyTaken = errors.New("order is taken by another user")
 
 type OrderUseCase struct {
 	orderRepo repository.OrderRepository
@@ -41,9 +41,9 @@ func (u *OrderUseCase) CreateOrder(ctx context.Context, id string, userID int, s
 	}
 	if existingOrder != nil {
 		if existingOrder.UserID != newOrder.UserID {
-			return existingOrder, AlreadyTaken
+			return existingOrder, ErrAlreadyTaken
 		} else {
-			return existingOrder, AlreadyExists
+			return existingOrder, ErrAlreadyExists
 		}
 	} else {
 		return nil, err

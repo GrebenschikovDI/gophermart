@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/entity"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/repository"
@@ -26,6 +27,8 @@ func (u *UserUseCase) RegisterUser(ctx context.Context, username, password strin
 
 	if existingUser != nil {
 		return nil, ErrUserExists
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
 	}
 
 	passwordHash, err := hashPassword(password)

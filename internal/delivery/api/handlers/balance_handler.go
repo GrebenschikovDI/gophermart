@@ -81,7 +81,7 @@ func (b *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = b.BalanceUseCase.Withdraw(r.Context(), currentUserID, sum)
-	if errors.Is(err, usecase.LowBalance) {
+	if errors.Is(err, usecase.ErrLowBalance) {
 		http.Error(w, "Low balance", http.StatusPaymentRequired)
 		return
 	} else if err != nil {
@@ -95,6 +95,9 @@ func (b *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = b.WithdrawalUseCase.Add(r.Context(), newWithdrawal)
+	if err != nil {
+		http.Error(w, "Error processing withdrawal", http.StatusInternalServerError)
+	}
 
 	w.WriteHeader(http.StatusOK)
 }

@@ -23,6 +23,9 @@ type PgStorage struct {
 
 func InitDB(_ context.Context, dsn, migrations string) (*PgStorage, error) {
 	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		return nil, err
+	}
 	userRepo := NewUserRepo(db)
 	orderRepo := NewOrderRepo(db)
 	balanceRepo := NewBalanceRepo(db)

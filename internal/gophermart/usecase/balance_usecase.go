@@ -7,7 +7,7 @@ import (
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/repository"
 )
 
-var LowBalance = errors.New("balance is low")
+var ErrLowBalance = errors.New("balance is low")
 
 type BalanceUseCase struct {
 	balanceRepo repository.BalanceRepository
@@ -44,7 +44,7 @@ func (u *BalanceUseCase) Withdraw(ctx context.Context, userID int, withdraw floa
 			return err
 		}
 	} else {
-		return LowBalance
+		return ErrLowBalance
 	}
 	return nil
 }

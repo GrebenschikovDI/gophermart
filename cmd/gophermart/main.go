@@ -36,7 +36,7 @@ func main() {
 		Handler: api.Router(*userUseCase, *orderUseCase, *balanceUseCase, *withdrawalUseCase),
 	}
 
-	go accrual.Sender(context.Background(), *orderUseCase, *cfg, 5*time.Second)
+	go accrual.Sender(context.Background(), *orderUseCase, *balanceUseCase, *cfg, 5*time.Second)
 
 	fmt.Println("Running server at", cfg.RunAddress)
 

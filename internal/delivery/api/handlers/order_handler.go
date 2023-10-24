@@ -87,10 +87,10 @@ func (o *OrderHandler) UploadOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, err = o.OrderUseCase.CreateOrder(r.Context(), orderID, currentUserID, "NEW")
-	if errors.Is(err, usecase.AlreadyTaken) {
+	if errors.Is(err, usecase.ErrAlreadyTaken) {
 		http.Error(w, "order is taken by another user", http.StatusConflict)
 		return
-	} else if errors.Is(err, usecase.AlreadyExists) {
+	} else if errors.Is(err, usecase.ErrAlreadyExists) {
 		http.Error(w, "order already exists", http.StatusOK)
 		return
 	} else if err != nil {
