@@ -10,7 +10,6 @@ import (
 	"github.com/GrebenschikovDI/gophermart.git/internal/infrastructure/config"
 	"github.com/GrebenschikovDI/gophermart.git/internal/infrastructure/persistence"
 	"net/http"
-	"time"
 )
 
 const migrations = "migrations"
@@ -36,7 +35,7 @@ func main() {
 		Handler: api.Router(*userUseCase, *orderUseCase, *balanceUseCase, *withdrawalUseCase),
 	}
 
-	go accrual.Sender(context.Background(), *orderUseCase, *balanceUseCase, *cfg, 5*time.Second)
+	go accrual.Sender(context.Background(), *orderUseCase, *balanceUseCase, *cfg, 0)
 
 	fmt.Println("Running server at", cfg.RunAddress)
 
