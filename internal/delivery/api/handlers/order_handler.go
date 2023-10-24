@@ -28,6 +28,7 @@ func NewOrderHandler(orderUseCase usecase.OrderUseCase) *OrderHandler {
 }
 
 func (o *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	currentUserID, err := getCurrentUser(r)
 	if err != nil {
 		http.Error(w, "Cant get user id", http.StatusUnauthorized)
@@ -44,7 +45,6 @@ func (o *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
 	ordersRequest := make([]*OrderRequest, 0)

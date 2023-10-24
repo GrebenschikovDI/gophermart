@@ -35,6 +35,7 @@ func NewBalanceHandler(
 }
 
 func (b *BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	currentUserID, err := getCurrentUser(r)
 	if err != nil {
 		http.Error(w, "Cant get user id", http.StatusUnauthorized)
@@ -49,8 +50,6 @@ func (b *BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
 		Current:   balance.Amount,
 		Withdrawn: balance.Withdrawn,
 	}
-
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	enc := json.NewEncoder(w)
 	if err := enc.Encode(balanceToSend); err != nil {
