@@ -19,7 +19,7 @@ type Response struct {
 func SendOrder(order string, cfg config.ServerConfig, responseChan chan<- Response) {
 	client := &http.Client{}
 	server := cfg.AccrualAddress
-	url := fmt.Sprintf("http://%s/api/orders/%s", server, order)
+	url := fmt.Sprintf("%s/api/orders/%s", server, order)
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		fmt.Printf("Ошибка при создании запроса для заказа %s: %v\n", order, err)
