@@ -51,7 +51,7 @@ func Sender(ctx context.Context,
 	for {
 		orders := GetOrders(ctx, u)
 		for _, order := range orders {
-			SendOrder(order, cfg, responseChan)
+			go SendOrder(order, cfg, responseChan)
 		}
 
 		for range orders {
@@ -68,6 +68,7 @@ func Sender(ctx context.Context,
 
 func GetOrders(ctx context.Context, u usecase.OrderUseCase) []string {
 	send, err := u.GetToSend(ctx)
+	fmt.Println(send)
 	if err != nil {
 		return nil
 	}
@@ -81,7 +82,6 @@ func ProcessResponse(ctx context.Context, response *http.Response, u usecase.Ord
 			Status  string  `json:"status"`
 			Accrual float64 `json:"accrual"`
 		}
-		fmt.Println("ПРОЦЕССИМ")
 
 		if err := json.NewDecoder(response.Body).Decode(&result); err != nil {
 			fmt.Printf("Ошибка при декодировании JSON ответа: %v\n", err)
@@ -90,7 +90,6 @@ func ProcessResponse(ctx context.Context, response *http.Response, u usecase.Ord
 
 		switch result.Status {
 		case "PROCESSED":
-			fmt.Println("ПРОЦЕССИМ")
 			if _, err := u.UpdateOrderStatus(ctx, result.Order, "PROCESSED", &result.Accrual); err != nil {
 				fmt.Printf("Ошибка при обновлении статуса заказа %s: %v\n", result.Order, err)
 			}
@@ -106,22 +105,18 @@ func ProcessResponse(ctx context.Context, response *http.Response, u usecase.Ord
 				}
 			}
 		case "INVALID":
-			fmt.Println("ПРОЦЕССИМ")
 			if _, err := u.UpdateOrderStatus(ctx, result.Order, "INVALID", &result.Accrual); err != nil {
 				fmt.Printf("Ошибка при обновлении статуса заказа %s: %v\n", result.Order, err)
 			}
 		case "PROCESSING":
-			fmt.Println("ПРОЦЕССИМ")
 			if _, err := u.UpdateOrderStatus(ctx, result.Order, "PROCESSING", &result.Accrual); err != nil {
 				fmt.Printf("Ошибка при обновлении статуса заказа %s: %v\n", result.Order, err)
 			}
 		case "REGISTERED":
-			fmt.Println("ПРОЦЕССИМ")
 			if _, err := u.UpdateOrderStatus(ctx, result.Order, "REGISTERED", &result.Accrual); err != nil {
 				fmt.Printf("Ошибка при обновлении статуса заказа %s: %v\n", result.Order, err)
 			}
 		default:
-			fmt.Println("ПРОЦЕССИМ")
 			fmt.Printf("Заказ %s не был обработан: статус %s\n", result.Order, result.Status)
 		}
 	} else {

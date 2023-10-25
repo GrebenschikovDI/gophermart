@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/usecase"
 	"io"
 	"net/http"
@@ -30,24 +29,18 @@ func NewOrderHandler(orderUseCase usecase.OrderUseCase) *OrderHandler {
 
 func (o *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	fmt.Println("getting order")
 	currentUserID, err := getCurrentUser(r)
-	fmt.Println("getting user")
 	if err != nil {
 		http.Error(w, "Cant get user id", http.StatusUnauthorized)
-		fmt.Println("Error getting user")
 		return
 	}
 
 	orders, err := o.OrderUseCase.GetByUserID(r.Context(), currentUserID)
-	fmt.Println("getting order")
 	if err != nil {
 		http.Error(w, "Cant get orders list", http.StatusInternalServerError)
-		fmt.Println("Error getting order")
 		return
 	}
 	if len(orders) == 0 {
-		fmt.Println("no orders")
 		http.Error(w, "Order list is empty", http.StatusNoContent)
 		return
 	}
@@ -55,7 +48,6 @@ func (o *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	ordersRequest := make([]*OrderRequest, 0)
-	fmt.Println("перебор всех заказов")
 	for _, order := range orders {
 		ord := &OrderRequest{
 			Number:     order.ID,
@@ -67,10 +59,9 @@ func (o *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 		}
 		ordersRequest = append(ordersRequest, ord)
 	}
-	fmt.Println("передача заказов в json")
+
 	enc := json.NewEncoder(w)
 	if err := enc.Encode(ordersRequest); err != nil {
-		fmt.Println("ошбка передачи заказов в json")
 		http.Error(w, "Error encoding JSON", http.StatusInternalServerError)
 		return
 	}
