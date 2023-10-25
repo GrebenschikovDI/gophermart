@@ -30,10 +30,6 @@ func main() {
 	balanceUseCase := usecase.NewBalanceUseCase(db.BalanceRepo)
 	withdrawalUseCase := usecase.NewWithdrawalUseCase(db.WithdrawalRepo)
 
-	fmt.Println(cfg.AccrualAddress)
-	fmt.Println(cfg.Dsn)
-	fmt.Println(cfg.RunAddress)
-
 	server := &http.Server{
 		Addr:    cfg.RunAddress,
 		Handler: api.Router(*userUseCase, *orderUseCase, *balanceUseCase, *withdrawalUseCase),
