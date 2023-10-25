@@ -13,9 +13,9 @@ type ServerConfig struct {
 }
 
 const (
-	defaultRun        = "localhost:8000"
+	defaultRun        = "localhost:8080"
 	defaultDsn        = ""
-	defaultAccrual    = "localhost:8080"
+	defaultAccrual    = ""
 	defaultMigrations = "migrations"
 )
 
