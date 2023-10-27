@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/usecase"
 	"io"
 	"net/http"
@@ -87,10 +88,10 @@ func (o *OrderHandler) UploadOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, err = o.OrderUseCase.CreateOrder(r.Context(), orderID, currentUserID, "NEW")
-	if errors.Is(err, usecase.ErrAlreadyTaken) {
+	if errors.Is(err, gophermart.ErrAlreadyTaken) {
 		http.Error(w, "order is taken by another user", http.StatusConflict)
 		return
-	} else if errors.Is(err, usecase.ErrAlreadyExists) {
+	} else if errors.Is(err, gophermart.ErrAlreadyExists) {
 		http.Error(w, "order already exists", http.StatusOK)
 		return
 	} else if err != nil {

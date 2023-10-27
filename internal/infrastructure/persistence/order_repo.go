@@ -100,14 +100,15 @@ func (o *orderRepo) GetByUserID(ctx context.Context, userID int) ([]*entity.Orde
 	return orders, nil
 }
 
-func (o *orderRepo) GetToSend(ctx context.Context) ([]*entity.Order, error) {
+func (o *orderRepo) GetToSend(ctx context.Context, offset, limit int) ([]*entity.Order, error) {
 	query := `
         SELECT id, user_id, status, accrual, uploaded_at
         FROM orders
         WHERE status IN ('NEW', 'PROCESSING', 'REGISTERED')
+        LIMIT $1 OFFSET $2
     `
 
-	rows, err := o.db.QueryContext(ctx, query)
+	rows, err := o.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		return nil, err
 	}

@@ -66,13 +66,24 @@ func (b *balanceRepo) Add(ctx context.Context, userID int, amount float64) error
 	return nil
 }
 
-func (b *balanceRepo) Withdraw(ctx context.Context, userID int, withdraw float64) error {
-	tx, err := b.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+func (b *balanceRepo) BeginTransaction() (*sql.Tx, error) {
+	return b.db.Begin()
+}
 
+func (b *balanceRepo) Check(ctx context.Context, tx *sql.Tx, userID int, withdrawal float64) (bool, error) {
+	var currentAmount float64
+	query := "SELECT amount FROM balance WHERE user_id = $1 FOR UPDATE"
+	err := tx.QueryRowContext(ctx, query, userID).Scan(&currentAmount)
+	if err != nil {
+		return false, err
+	}
+	if withdrawal > currentAmount {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (b *balanceRepo) Withdraw(ctx context.Context, tx *sql.Tx, userID int, withdraw float64) error {
 	t := time.Now().Format(time.RFC3339)
 
 	query := `
@@ -81,35 +92,9 @@ func (b *balanceRepo) Withdraw(ctx context.Context, userID int, withdraw float64
 		ON CONFLICT (user_id) DO UPDATE 
 		SET amount = balance.amount - excluded.withdrawn, withdrawn = balance.withdrawn + excluded.withdrawn, processed_at = excluded.processed_at
 	`
-	_, err = tx.ExecContext(ctx, query, userID, withdraw, t)
+	_, err := tx.ExecContext(ctx, query, userID, withdraw, t)
 	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
 		return err
 	}
 	return nil
-}
-
-func (b *balanceRepo) CheckWithdrawal(ctx context.Context, userID int, withdrawal float64) (bool, error) {
-	tx, err := b.db.Begin()
-	if err != nil {
-		return false, err
-	}
-	defer tx.Rollback()
-
-	var currentAmount float64
-	query := "SELECT amount FROM balance WHERE user_id = $1 FOR UPDATE"
-	err = tx.QueryRowContext(ctx, query, userID).Scan(&currentAmount)
-	if err != nil {
-		return false, err
-	}
-	if withdrawal > currentAmount {
-		return false, nil
-	}
-	if err := tx.Commit(); err != nil {
-		return false, err
-	}
-	return true, nil
 }

@@ -45,11 +45,12 @@ func Sender(ctx context.Context,
 	u usecase.OrderUseCase,
 	b usecase.BalanceUseCase,
 	cfg config.ServerConfig,
-	rate time.Duration) {
+	rate time.Duration,
+	offset, limit int) {
 	responseChan := make(chan Response)
 
 	for {
-		orders := GetOrders(ctx, u)
+		orders := GetOrders(ctx, u, offset, limit)
 		for _, order := range orders {
 			go SendOrder(order, cfg, responseChan)
 		}
@@ -66,8 +67,8 @@ func Sender(ctx context.Context,
 	}
 }
 
-func GetOrders(ctx context.Context, u usecase.OrderUseCase) []string {
-	send, err := u.GetToSend(ctx)
+func GetOrders(ctx context.Context, u usecase.OrderUseCase, offset, limit int) []string {
+	send, err := u.GetToSend(ctx, offset, limit)
 	fmt.Println(send)
 	if err != nil {
 		return nil

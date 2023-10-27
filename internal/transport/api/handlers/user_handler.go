@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/usecase"
 	"net/http"
 )
@@ -76,7 +77,7 @@ func (u *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := u.UserUseCase.RegisterUser(r.Context(), username, password)
 	if err != nil {
-		if errors.Is(err, usecase.ErrUserExists) {
+		if errors.Is(err, gophermart.ErrUserExists) {
 			http.Error(w, "Username is already taken", http.StatusConflict)
 			return
 		}

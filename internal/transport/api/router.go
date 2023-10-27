@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/GrebenschikovDI/gophermart.git/internal/delivery/api/handlers"
-	mw "github.com/GrebenschikovDI/gophermart.git/internal/delivery/api/middleware"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/usecase"
+	"github.com/GrebenschikovDI/gophermart.git/internal/transport/api/handlers"
+	mw "github.com/GrebenschikovDI/gophermart.git/internal/transport/api/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )

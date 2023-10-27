@@ -10,5 +10,5 @@ type OrderRepository interface {
 	GetByID(ctx context.Context, id string) (*entity.Order, error)
 	Update(ctx context.Context, id, status string, accrual *float64) (*entity.Order, error)
 	GetByUserID(ctx context.Context, userID int) ([]*entity.Order, error)
-	GetToSend(ctx context.Context) ([]*entity.Order, error)
+	GetToSend(ctx context.Context, offset, limit int) ([]*entity.Order, error)
 }

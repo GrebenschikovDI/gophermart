@@ -2,12 +2,11 @@ package usecase
 
 import (
 	"context"
-	"errors"
+	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/entity"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/repository"
+	"github.com/pkg/errors"
 )
-
-var ErrLowBalance = errors.New("balance is low")
 
 type BalanceUseCase struct {
 	balanceRepo repository.BalanceRepository
@@ -22,29 +21,38 @@ func NewBalanceUseCase(balanceRepo repository.BalanceRepository) *BalanceUseCase
 func (u *BalanceUseCase) Get(ctx context.Context, userID int) (*entity.Balance, error) {
 	balance, err := u.balanceRepo.GetByID(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "error getting balance of uesr: %d", userID)
 	}
 	return balance, nil
 }
 func (u *BalanceUseCase) Add(ctx context.Context, userID int, amount float64) error {
 	err := u.balanceRepo.Add(ctx, userID, amount)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "can't add balance to user: %d", userID)
 	}
 	return nil
 }
+
 func (u *BalanceUseCase) Withdraw(ctx context.Context, userID int, withdraw float64) error {
-	isValid, err := u.balanceRepo.CheckWithdrawal(ctx, userID, withdraw)
+	tx, err := u.balanceRepo.BeginTransaction()
+	if err != nil {
+		return errors.Wrapf(err, "wihtdraw transaction error, user: %d", userID)
+	}
+	defer tx.Rollback()
+	canWithdraw, err := u.balanceRepo.Check(ctx, tx, userID, withdraw)
+	if err != nil {
+		return errors.Wrapf(err, "wihtdraw check error, user: %d", userID)
+	}
+	if !canWithdraw {
+		return errors.Wrapf(gophermart.ErrLowBalance, "low balance, user: %d", userID)
+	}
+	err = u.balanceRepo.Withdraw(ctx, tx, userID, withdraw)
 	if err != nil {
 		return err
 	}
-	if isValid {
-		err := u.balanceRepo.Withdraw(ctx, userID, withdraw)
-		if err != nil {
-			return err
-		}
-	} else {
-		return ErrLowBalance
+	err = tx.Commit()
+	if err != nil {
+		return errors.Wrapf(err, "wihtdraw commit error, user: %d", userID)
 	}
 	return nil
 }

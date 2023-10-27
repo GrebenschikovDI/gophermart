@@ -3,13 +3,11 @@ package usecase
 import (
 	"context"
 	"database/sql"
-	"errors"
+	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/entity"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/repository"
+	"github.com/pkg/errors"
 )
-
-var ErrAlreadyExists = errors.New("order already exists")
-var ErrAlreadyTaken = errors.New("order is taken by another user")
 
 type OrderUseCase struct {
 	orderRepo repository.OrderRepository
@@ -31,29 +29,29 @@ func (u *OrderUseCase) CreateOrder(ctx context.Context, id string, userID int, s
 	existingOrder, err := u.orderRepo.GetByID(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		if err := u.orderRepo.Create(ctx, newOrder); err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "creating order err, orderID: %s", id)
 		}
 		order, err := u.orderRepo.GetByID(ctx, id)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "creating order, can't get order: %s", id)
 		}
 		return order, nil
 	}
 	if existingOrder != nil {
 		if existingOrder.UserID != newOrder.UserID {
-			return existingOrder, ErrAlreadyTaken
+			return existingOrder, errors.Wrapf(gophermart.ErrAlreadyTaken, "creating order, order %s is taken", id)
 		} else {
-			return existingOrder, ErrAlreadyExists
+			return existingOrder, errors.Wrapf(gophermart.ErrAlreadyExists, "creating order, order %s already exist", id)
 		}
 	} else {
-		return nil, err
+		return nil, errors.Wrapf(err, "creating order, DB err, orderID: %s", id)
 	}
 }
 
 func (u *OrderUseCase) GetOrderByID(ctx context.Context, id string) (*entity.Order, error) {
 	order, err := u.orderRepo.GetByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "get order by id err, id: %s", id)
 	}
 	return order, nil
 }
@@ -61,7 +59,7 @@ func (u *OrderUseCase) GetOrderByID(ctx context.Context, id string) (*entity.Ord
 func (u *OrderUseCase) GetByUserID(ctx context.Context, userID int) ([]*entity.Order, error) {
 	orderList, err := u.orderRepo.GetByUserID(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "get order by userID err, id: %d", userID)
 	}
 	return orderList, nil
 }
@@ -69,15 +67,15 @@ func (u *OrderUseCase) GetByUserID(ctx context.Context, userID int) ([]*entity.O
 func (u *OrderUseCase) UpdateOrderStatus(ctx context.Context, id, status string, accrual *float64) (*entity.Order, error) {
 	order, err := u.orderRepo.Update(ctx, id, status, accrual)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "update order err, id: %s", id)
 	}
 	return order, nil
 }
 
-func (u *OrderUseCase) GetToSend(ctx context.Context) ([]string, error) {
-	orders, err := u.orderRepo.GetToSend(ctx)
+func (u *OrderUseCase) GetToSend(ctx context.Context, offset, limit int) ([]string, error) {
+	orders, err := u.orderRepo.GetToSend(ctx, offset, limit)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getting orders to sent err")
 	}
 	var numbers []string
 	for _, value := range orders {

@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/entity"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/usecase"
 	"net/http"
@@ -81,7 +82,7 @@ func (b *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = b.BalanceUseCase.Withdraw(r.Context(), currentUserID, sum)
-	if errors.Is(err, usecase.ErrLowBalance) {
+	if errors.Is(err, gophermart.ErrLowBalance) {
 		http.Error(w, "Low balance", http.StatusPaymentRequired)
 		return
 	} else if err != nil {
