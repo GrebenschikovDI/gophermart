@@ -9,12 +9,14 @@ type ServerConfig struct {
 	RunAddress     string
 	Dsn            string
 	AccrualAddress string
+	Migrations     string
 }
 
 const (
-	defaultRun     = "localhost:8000"
-	defaultDsn     = ""
-	defaultAccrual = ""
+	defaultRun        = "localhost:8000"
+	defaultDsn        = ""
+	defaultAccrual    = "http://localhost:8080"
+	defaultMigrations = "migrations"
 )
 
 func LoadConfig() (*ServerConfig, error) {
@@ -27,13 +29,14 @@ func LoadConfig() (*ServerConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	cfg.Migrations = defaultMigrations
 	return cfg, nil
 }
 
 func (c *ServerConfig) configureFlags() error {
 	flag.StringVar(&c.RunAddress, "a", defaultRun, "address and port for server to run")
-	flag.StringVar(&c.Dsn, "-d", defaultDsn, "database address")
-	flag.StringVar(&c.AccrualAddress, "-r", defaultAccrual, "accrual address")
+	flag.StringVar(&c.Dsn, "d", defaultDsn, "database address")
+	flag.StringVar(&c.AccrualAddress, "r", defaultAccrual, "accrual address")
 	return nil
 }
 
