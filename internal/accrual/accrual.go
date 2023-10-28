@@ -97,7 +97,7 @@ func (a *Accrual) ProcessResponse(ctx context.Context, response *http.Response, 
 		}
 
 		if err := json.NewDecoder(response.Body).Decode(&result); err != nil {
-			a.log.Errorf("Ошибка при декодировании JSON ответа: %v\n", err)
+			//a.log.Errorf("Ошибка при декодировании JSON ответа: %v\n", err)
 			return
 		}
 

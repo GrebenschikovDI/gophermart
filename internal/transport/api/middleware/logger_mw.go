@@ -25,6 +25,9 @@ func LoggerFromContext(ctx context.Context) *logrus.Logger {
 }
 
 func LogError(w http.ResponseWriter, r *http.Request, err error) {
+	if err == nil {
+		return
+	}
 	LoggerFromContext(r.Context()).WithFields(logrus.Fields{
 		"error":  err.Error(),
 		"method": r.Method,
