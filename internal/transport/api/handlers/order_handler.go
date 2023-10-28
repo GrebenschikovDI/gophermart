@@ -108,8 +108,7 @@ func (o *OrderHandler) UploadOrder(w http.ResponseWriter, r *http.Request) {
 		mw.LogError(w, r, err)
 		http.Error(w, "Unknown mistake", http.StatusInternalServerError)
 	} else {
-		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte("New order is taken"))
+		http.Error(w, "New order is taken", http.StatusAccepted)
 		return
 	}
 }
