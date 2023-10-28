@@ -55,7 +55,7 @@ func main() {
 
 	sender := accrual.NewAccrual(log)
 	go sender.Sender(context.Background(), *orderUseCase, *balanceUseCase, *cfg, 0, 0, 100)
-	//go accrual.Sender(context.Background(), *orderUseCase, *balanceUseCase, *cfg, 0, 0, 1000)
+	
 	log.Info("sender activated")
 
 	log.Infof("server running at %s", cfg.RunAddress)

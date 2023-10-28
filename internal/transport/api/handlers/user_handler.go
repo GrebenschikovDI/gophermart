@@ -73,8 +73,6 @@ func (u *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer r.Body.Close()
-
 	username := req.Login
 	password := req.Password
 
