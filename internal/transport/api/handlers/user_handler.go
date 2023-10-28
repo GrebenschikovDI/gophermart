@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/usecase"
+	mw "github.com/GrebenschikovDI/gophermart.git/internal/transport/api/middleware"
 	"net/http"
 )
 
@@ -27,6 +28,7 @@ func (u *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var req Auth
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		mw.LogError(w, r, err)
 		http.Error(w, "Failed to decode JSON request", http.StatusBadRequest)
 		return
 	}
@@ -35,18 +37,21 @@ func (u *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	password := req.Password
 
 	if username == "" || password == "" {
+		mw.LogError(w, r, gophermart.ErrEmptyField)
 		http.Error(w, "Username and password must not be empty", http.StatusBadRequest)
 		return
 	}
 
 	user, err := u.UserUseCase.AuthenticateUser(r.Context(), username, password)
 	if err != nil {
+		mw.LogError(w, r, err)
 		http.Error(w, "Authentication failed", http.StatusUnauthorized)
 		return
 	}
 
 	token, err := createAuthToken(user)
 	if err != nil {
+		mw.LogError(w, r, err)
 		http.Error(w, "Failed to create token", http.StatusInternalServerError)
 		return
 	}
@@ -63,14 +68,18 @@ func (u *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req Auth
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		mw.LogError(w, r, err)
 		http.Error(w, "Failed to decode JSON request", http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	username := req.Login
 	password := req.Password
 
 	if username == "" || password == "" {
+		mw.LogError(w, r, gophermart.ErrEmptyField)
 		http.Error(w, "Username and password must not be empty", http.StatusBadRequest)
 		return
 	}
@@ -78,6 +87,7 @@ func (u *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	user, err := u.UserUseCase.RegisterUser(r.Context(), username, password)
 	if err != nil {
 		if errors.Is(err, gophermart.ErrUserExists) {
+			mw.LogError(w, r, err)
 			http.Error(w, "Username is already taken", http.StatusConflict)
 			return
 		}
@@ -87,6 +97,7 @@ func (u *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	token, err := createAuthToken(user)
 	if err != nil {
+		mw.LogError(w, r, err)
 		http.Error(w, "Failed to create token", http.StatusInternalServerError)
 		return
 	}

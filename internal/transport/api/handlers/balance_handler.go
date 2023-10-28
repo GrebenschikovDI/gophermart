@@ -6,6 +6,7 @@ import (
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/entity"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/usecase"
+	mw "github.com/GrebenschikovDI/gophermart.git/internal/transport/api/middleware"
 	"net/http"
 	"time"
 )
@@ -39,11 +40,13 @@ func (b *BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	currentUserID, err := getCurrentUser(r)
 	if err != nil {
+		mw.LogError(w, r, err)
 		http.Error(w, "Cant get user id", http.StatusUnauthorized)
 		return
 	}
 	balance, err := b.BalanceUseCase.Get(r.Context(), currentUserID)
 	if err != nil {
+		mw.LogError(w, r, err)
 		http.Error(w, "Cant get balance", http.StatusInternalServerError)
 		return
 	}
@@ -54,6 +57,7 @@ func (b *BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	enc := json.NewEncoder(w)
 	if err := enc.Encode(balanceToSend); err != nil {
+		mw.LogError(w, r, err)
 		http.Error(w, "Error encoding JSON", http.StatusInternalServerError)
 		return
 	}
@@ -64,11 +68,13 @@ func (b *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 
 	currentUserID, err := getCurrentUser(r)
 	if err != nil {
+		mw.LogError(w, r, err)
 		http.Error(w, "Cant get user id", http.StatusUnauthorized)
 		return
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		mw.LogError(w, r, err)
 		http.Error(w, "Failed to decode JSON request", http.StatusBadRequest)
 		return
 	}
@@ -77,11 +83,13 @@ func (b *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 	sum := req.Sum
 
 	if !isLuhnValid(order) {
+		mw.LogError(w, r, gophermart.ErrOrderNotValid)
 		http.Error(w, "Order not valid", http.StatusUnprocessableEntity)
 		return
 	}
 
 	err = b.BalanceUseCase.Withdraw(r.Context(), currentUserID, sum)
+	mw.LogError(w, r, err)
 	if errors.Is(err, gophermart.ErrLowBalance) {
 		http.Error(w, "Low balance", http.StatusPaymentRequired)
 		return
@@ -97,6 +105,7 @@ func (b *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 
 	err = b.WithdrawalUseCase.Add(r.Context(), newWithdrawal)
 	if err != nil {
+		mw.LogError(w, r, err)
 		http.Error(w, "Error processing withdrawal", http.StatusInternalServerError)
 	}
 
@@ -106,17 +115,20 @@ func (b *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 func (b *BalanceHandler) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 	currentUserID, err := getCurrentUser(r)
 	if err != nil {
+		mw.LogError(w, r, err)
 		http.Error(w, "Cant get user id", http.StatusUnauthorized)
 		return
 	}
 
 	withdrawals, err := b.WithdrawalUseCase.GetList(r.Context(), currentUserID)
 	if err != nil {
+		mw.LogError(w, r, err)
 		http.Error(w, "can't get withdrawals", http.StatusInternalServerError)
 		return
 	}
 
 	if len(withdrawals) == 0 {
+		mw.LogError(w, r, gophermart.ErrNoOrders)
 		http.Error(w, "Order list is empty", http.StatusNoContent)
 		return
 	}
@@ -136,6 +148,7 @@ func (b *BalanceHandler) GetWithdrawals(w http.ResponseWriter, r *http.Request) 
 
 	enc := json.NewEncoder(w)
 	if err := enc.Encode(answer); err != nil {
+		mw.LogError(w, r, err)
 		http.Error(w, "Error encoding JSON", http.StatusInternalServerError)
 		return
 	}

@@ -37,7 +37,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:    cfg.RunAddress,
-		Handler: api.Router(*userUseCase, *orderUseCase, *balanceUseCase, *withdrawalUseCase),
+		Handler: api.Router(*userUseCase, *orderUseCase, *balanceUseCase, *withdrawalUseCase, log),
 	}
 
 	stopped := make(chan struct{})
@@ -53,7 +53,9 @@ func main() {
 		close(stopped)
 	}()
 
-	go accrual.Sender(context.Background(), *orderUseCase, *balanceUseCase, *cfg, 0, 0, 1000)
+	sender := accrual.NewAccrual(log)
+	go sender.Sender(context.Background(), *orderUseCase, *balanceUseCase, *cfg, 0, 0, 100)
+	//go accrual.Sender(context.Background(), *orderUseCase, *balanceUseCase, *cfg, 0, 0, 1000)
 	log.Info("sender activated")
 
 	log.Infof("server running at %s", cfg.RunAddress)

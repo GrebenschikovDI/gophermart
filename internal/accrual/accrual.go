@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/GrebenschikovDI/gophermart.git/internal/gophermart/usecase"
 	"github.com/GrebenschikovDI/gophermart.git/internal/infrastructure/config"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 )
@@ -16,19 +17,30 @@ type Response struct {
 	Error    error
 }
 
-func SendOrder(order string, cfg config.ServerConfig, responseChan chan<- Response) {
-	client := &http.Client{}
+type Accrual struct {
+	log    *logrus.Logger
+	client *http.Client
+}
+
+func NewAccrual(log *logrus.Logger) *Accrual {
+	return &Accrual{
+		log:    log,
+		client: &http.Client{},
+	}
+}
+
+func (a *Accrual) SendOrder(order string, cfg config.ServerConfig, responseChan chan<- Response) {
 	server := cfg.AccrualAddress
 	url := fmt.Sprintf("%s/api/orders/%s", server, order)
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		fmt.Printf("Ошибка при создании запроса для заказа %s: %v\n", order, err)
+		a.log.Errorf("Ошибка при создании запроса для заказа %s: %v\n", order, err)
 		responseChan <- Response{Order: order, Error: err}
 		return
 	}
-	do, err := client.Do(request)
+	do, err := a.client.Do(request)
 	if err != nil {
-		fmt.Printf("Ошибка при выполнении запроса для заказа %s: %v\n", order, err)
+		a.log.Errorf("Ошибка при выполнении запроса для заказа %s: %v\n", order, err)
 		responseChan <- Response{Order: order, Error: err}
 		return
 	}
@@ -41,7 +53,7 @@ func SendOrder(order string, cfg config.ServerConfig, responseChan chan<- Respon
 	}
 }
 
-func Sender(ctx context.Context,
+func (a *Accrual) Sender(ctx context.Context,
 	u usecase.OrderUseCase,
 	b usecase.BalanceUseCase,
 	cfg config.ServerConfig,
@@ -50,33 +62,33 @@ func Sender(ctx context.Context,
 	responseChan := make(chan Response)
 
 	for {
-		orders := GetOrders(ctx, u, offset, limit)
+		orders := a.GetOrders(ctx, u, offset, limit)
 		for _, order := range orders {
-			go SendOrder(order, cfg, responseChan)
+			go a.SendOrder(order, cfg, responseChan)
 		}
 
 		for range orders {
 			response := <-responseChan
 			if response.Error != nil {
-				fmt.Printf("Ошибка при запросе для заказа %s: %v\n", response.Order, response.Error)
+				a.log.Errorf("Ошибка при запросе для заказа %s: %v\n", response.Order, response.Error)
 			} else {
-				ProcessResponse(ctx, response.Response, u, b)
+				a.ProcessResponse(ctx, response.Response, u, b)
 			}
 		}
 		time.Sleep(rate)
 	}
 }
 
-func GetOrders(ctx context.Context, u usecase.OrderUseCase, offset, limit int) []string {
+func (a *Accrual) GetOrders(ctx context.Context, u usecase.OrderUseCase, offset, limit int) []string {
 	send, err := u.GetToSend(ctx, offset, limit)
-	fmt.Println(send)
 	if err != nil {
+		a.log.Error(err)
 		return nil
 	}
 	return send
 }
 
-func ProcessResponse(ctx context.Context, response *http.Response, u usecase.OrderUseCase, b usecase.BalanceUseCase) {
+func (a *Accrual) ProcessResponse(ctx context.Context, response *http.Response, u usecase.OrderUseCase, b usecase.BalanceUseCase) {
 	if response.StatusCode == http.StatusOK {
 		var result struct {
 			Order   string  `json:"order"`
@@ -85,42 +97,42 @@ func ProcessResponse(ctx context.Context, response *http.Response, u usecase.Ord
 		}
 
 		if err := json.NewDecoder(response.Body).Decode(&result); err != nil {
-			fmt.Printf("Ошибка при декодировании JSON ответа: %v\n", err)
+			a.log.Errorf("Ошибка при декодировании JSON ответа: %v\n", err)
 			return
 		}
 
 		switch result.Status {
 		case "PROCESSED":
 			if _, err := u.UpdateOrderStatus(ctx, result.Order, "PROCESSED", &result.Accrual); err != nil {
-				fmt.Printf("Ошибка при обновлении статуса заказа %s: %v\n", result.Order, err)
+				a.log.Errorf("Ошибка при обновлении статуса заказа %s: %v\n", result.Order, err)
 			}
 			if result.Accrual > 0 {
 				o, err := u.GetOrderByID(ctx, result.Order)
 				user := o.UserID
 				if err != nil {
-					fmt.Printf("Ошибка при получении ID пользователя для заказа %s: %v\n", result.Order, err)
+					a.log.Errorf("Ошибка при получении ID пользователя для заказа %s: %v\n", result.Order, err)
 				} else {
 					if err := b.Add(ctx, user, result.Accrual); err != nil {
-						fmt.Printf("Ошибка при обновлении баланса пользователя %d: %v\n", user, err)
+						a.log.Errorf("Ошибка при обновлении баланса пользователя %d: %v\n", user, err)
 					}
 				}
 			}
 		case "INVALID":
 			if _, err := u.UpdateOrderStatus(ctx, result.Order, "INVALID", &result.Accrual); err != nil {
-				fmt.Printf("Ошибка при обновлении статуса заказа %s: %v\n", result.Order, err)
+				a.log.Errorf("Ошибка при обновлении статуса заказа %s: %v\n", result.Order, err)
 			}
 		case "PROCESSING":
 			if _, err := u.UpdateOrderStatus(ctx, result.Order, "PROCESSING", &result.Accrual); err != nil {
-				fmt.Printf("Ошибка при обновлении статуса заказа %s: %v\n", result.Order, err)
+				a.log.Errorf("Ошибка при обновлении статуса заказа %s: %v\n", result.Order, err)
 			}
 		case "REGISTERED":
 			if _, err := u.UpdateOrderStatus(ctx, result.Order, "REGISTERED", &result.Accrual); err != nil {
-				fmt.Printf("Ошибка при обновлении статуса заказа %s: %v\n", result.Order, err)
+				a.log.Errorf("Ошибка при обновлении статуса заказа %s: %v\n", result.Order, err)
 			}
 		default:
-			fmt.Printf("Заказ %s не был обработан: статус %s\n", result.Order, result.Status)
+			a.log.Errorf("Заказ %s не был обработан: статус %s\n", result.Order, result.Status)
 		}
 	} else {
-		fmt.Printf("Ошибка при выполнении запроса. HTTP статус: %s\n", response.Status)
+		a.log.Errorf("Ошибка при выполнении запроса. HTTP статус: %s\n", response.Status)
 	}
 }

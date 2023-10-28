@@ -6,6 +6,7 @@ import (
 	mw "github.com/GrebenschikovDI/gophermart.git/internal/transport/api/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/sirupsen/logrus"
 )
 
 func Router(
@@ -13,8 +14,10 @@ func Router(
 	orderUseCase usecase.OrderUseCase,
 	balanceUseCase usecase.BalanceUseCase,
 	withdrawalUseCase usecase.WithdrawalUseCase,
+	log *logrus.Logger,
 ) *chi.Mux {
 	r := chi.NewRouter()
+	r.Use(mw.LoggerMiddleware(log))
 	r.Use(middleware.Recoverer)
 
 	r.Group(func(r chi.Router) {
